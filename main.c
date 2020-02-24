@@ -8,6 +8,7 @@
 #include<sys/shm.h>
 #include<sys/types.h>
 #include<sys/wait.h>
+#include<time.h>
 
 int main(int argc, char *argv[]){
 
@@ -111,7 +112,9 @@ int main(int argc, char *argv[]){
 	}
 	printf("oValue: %s\n", oValue);
 	printf("ovalue second place: %c\n", oValue[1]);
-	
+
+	clock_t before = clock();
+
 	pid_t childPid;
 	childPid = fork();
 
@@ -138,9 +141,8 @@ int main(int argc, char *argv[]){
 	if(childPid == 0){
 	printf("This is the child process\n");
 	printf("ChildMem: [0]: %d\n", shmPointer[0]);
-	char *paramList[] = {"./prime", NULL};
+	char *paramList[] = {"./prime", "2", "131", NULL};
 	execv("prime", paramList);
-
 	exit(0);
 	}
 	else if(childPid < 0){
@@ -150,7 +152,7 @@ int main(int argc, char *argv[]){
 		int returnStatus;
 		waitpid(childPid, &returnStatus, 0);
 
-		if(returnStatus == 0){
+		if(returnStatus >= 0){
 			printf("This is parent process\n");
 			printf("child terminated normally\n");
 		}
@@ -162,9 +164,30 @@ int main(int argc, char *argv[]){
 		printf("ParentMem: [1]: %d\n", shmPointer[1]);
 	}
 	
-	shmdt(&shmPointer);
+	if((shmdt(shmPointer)) < 0){
+		char *errorMessage[150];
+		strcat(errorMessage, programName);
+		strcat(errorMessage, ": Error: Failed to detach shared memory from parent");
+		perror(errorMessage);
+	}
+	if((shmctl(shmid, IPC_RMID, 0)) < 0){
+		char *errorMessage[150];
+		strcat(errorMessage, programName);
+		strcat(errorMessage, ": Error: Failed to delete shared memory");
+		perror(errorMessage);	
+	}
+	int i = 0;
+	int d;
+	for(i = 0; i < 1000000; i++){
+	for(d = 0; d < 1000; d++){
 
-
+		}
+	}
+	clock_t after = clock();
+	clock_t difference = after - before;
+	int msec = difference * 1000 / CLOCKS_PER_SEC;
+	printf("Time taken %d seconds %d milliseconds\n",
+	  msec/1000, msec%1000);
 	return 0;
 }
 
