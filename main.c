@@ -4,7 +4,10 @@
 #include<string.h>
 #include<errno.h>
 #include<libgen.h>
-
+#include<sys/ipc.h>
+#include<sys/shm.h>
+#include<sys/types.h>
+#include<sys/wait.h>
 
 int main(int argc, char *argv[]){
 
@@ -108,6 +111,58 @@ int main(int argc, char *argv[]){
 	}
 	printf("oValue: %s\n", oValue);
 	printf("ovalue second place: %c\n", oValue[1]);
+	
+	pid_t childPid;
+	childPid = fork();
+
+	key_t key;
+	key = ftok(".", 897);
+	int shmid = shmget(key, sizeof(int) * 2, 0666 | IPC_CREAT);
+	if(shmid < 0){
+		char *errorMessage[150];
+		strcat(errorMessage, programName);
+		strcat(errorMessage, ": Error: Failed to create shared memory");
+		perror(errorMessage);
+	}
+	int *shmPointer = shmat(shmid, NULL, 0);
+	if (*shmPointer == (void *) -1){
+		char *errorMessage[150];
+		strcat(errorMessage, programName);
+		strcat(errorMessage, ": Error: Failed to attach shared memory");
+		perror(errorMessage);
+	}
+	
+	shmPointer[0] = 5;
+	shmPointer[1] = 9;
+
+	if(childPid == 0){
+	printf("This is the child process\n");
+	printf("ChildMem: [0]: %d\n", shmPointer[0]);
+	char *paramList[] = {"./prime", NULL};
+	execv("prime", paramList);
+
+	exit(0);
+	}
+	else if(childPid < 0){
+	printf("Failed\n");
+	}
+	else{
+		int returnStatus;
+		waitpid(childPid, &returnStatus, 0);
+
+		if(returnStatus == 0){
+			printf("This is parent process\n");
+			printf("child terminated normally\n");
+		}
+		else{
+		printf("This is parent process\n");
+		printf("child did not terminate normally\n");
+		}
+		printf("ParentMem: [0]: %d\n", shmPointer[0]);
+		printf("ParentMem: [1]: %d\n", shmPointer[1]);
+	}
+	
+	shmdt(&shmPointer);
 
 
 	return 0;
