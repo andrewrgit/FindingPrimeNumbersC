@@ -115,12 +115,10 @@ int main(int argc, char *argv[]){
 
 	clock_t before = clock();
 
-	pid_t childPid;
-	childPid = fork();
 
 	key_t key;
 	key = ftok(".", 897);
-	int shmid = shmget(key, sizeof(int) * 2, 0666 | IPC_CREAT);
+	int shmid = shmget(key, sizeof(int) * nValue, 0666 | IPC_CREAT);
 	if(shmid < 0){
 		char *errorMessage[150];
 		strcat(errorMessage, programName);
@@ -138,33 +136,49 @@ int main(int argc, char *argv[]){
 	shmPointer[0] = 5;
 	shmPointer[1] = 9;
 
-	if(childPid == 0){
-	printf("This is the child process\n");
-	printf("ChildMem: [0]: %d\n", shmPointer[0]);
-	char *paramList[] = {"./prime", "2", "771", NULL};
-	execv("prime", paramList);
-	exit(0);
-	}
-	else if(childPid < 0){
-	printf("Failed\n");
-	}
-	else{
-		int returnStatus;
-		waitpid(childPid, &returnStatus, 0);
+	char bString[10];
+	char idString[10];
+	int numOfChildren = 0;
 
-		if(returnStatus == 0){
-			printf("This is parent process\n");
-			printf("child terminated normally\n");
+	int i;
+	for(i = 0; i < nValue; i ++){	
+		pid_t childPid;
+		if(numOfChildren >= sValue){
+			wait(NULL);
+			numOfChildren--;
+		}
+		childPid = fork();
+		
+
+		bString[0] = '\0';
+		idString[0] = '\0';
+		bValue = bValue + iValue;
+		sprintf(idString, "%d", i + 2);
+		sprintf(bString, "%d", bValue);
+		if(childPid == 0){
+		printf("This is the child process\n");
+		char *paramList[] = {"./prime", idString, bString, NULL};
+		execv("prime", paramList);
+		exit(0);
+		}
+		else if(childPid < 0){
+			char *errorMessage[150];
+			strcat(errorMessage, programName);
+			strcat(errorMessage, ": Error: fork() failed to create child");
+			perror(errorMessage);
 		}
 		else{
-		printf("This is parent process\n");
-		printf("child did not terminate normally\n");
+			numOfChildren++;
 		}
-		printf("ParentMem: [0]: %d\n", shmPointer[0]);
-		printf("ParentMem: [1]: %d\n", shmPointer[1]);
-		printf("ParentMem: [2]: %d\n", shmPointer[2]);
 	}
-	
+	printf("Parent to wait for children...\n");
+
+	pid_t allChildrenPid;
+	int status = 0;
+	while ((allChildrenPid = wait(&status)) > 0){
+		numOfChildren--;
+	}
+	printf("shmPointer 2,3,4: %d, %d, %d\n", shmPointer[2],shmPointer[3],shmPointer[4]);
 	if((shmdt(shmPointer)) < 0){
 		char *errorMessage[150];
 		strcat(errorMessage, programName);
@@ -177,9 +191,12 @@ int main(int argc, char *argv[]){
 		strcat(errorMessage, ": Error: Failed to delete shared memory");
 		perror(errorMessage);	
 	}
-	int i = 0;
+	int j = 0;
 	int d;
-	for(i = 0; i < 1000000; i++){
+	struct timespec time;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+	printf("TIME BEFORE: %d\n", time.tv_sec);
+	for(j = 0; j < 1000000; j++){
 	for(d = 0; d < 1000; d++){
 
 		}
