@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
 	int nValue = 4;
 	int sValue = 2;
 	int bValue = 100;
-	int iValue = 10;	
+	int iValue = 3;	
 	char *oValue = "output.txt";
 	
 	int option;
@@ -37,7 +37,15 @@ int main(int argc, char *argv[]){
 	while ((option = getopt(argc, argv, "hn:s:b:i:o:")) != -1){
 		switch(option){
 			case 'h':
-				printf("Help Message Here\n");
+				printf("oss calculates whether certain numbers are prime or not.\n"
+					"\tOptions:\n"
+					"\t(-h): Display help message and exit\n"
+					"\t(-n x): Indicate the maximum total child processes oss will ever create. (Default 4)\n"
+					"\t(-s x): Indicate the number of children allowed to exist in the system at the same time. (Default 2)\n"
+					"\t(-b x): Start of the sequence of numbers to be tested for primality. (Default 100)\n"
+					"\t(-i x): Increment between numbers that we test. (Default 3)\n"
+					"\t(-o filename): Output file for logging. (Default output.txt)");
+
 				hFlag = 1;
 				return 0;
 				break;
@@ -68,6 +76,7 @@ int main(int argc, char *argv[]){
 				}
 				else{
 					sValue = tmp;
+					if(sValue > 20) sValue = 20;
 				}
 				printf("sValue: %d\n", sValue);
 				break;
@@ -152,12 +161,11 @@ int main(int argc, char *argv[]){
 
 		bString[0] = '\0';
 		idString[0] = '\0';
-		bValue = bValue + iValue;
 		sprintf(idString, "%d", i + 2);
 		sprintf(bString, "%d", bValue);
 		if(childPid == 0){
 		printf("This is the child process\n");
-		char *paramList[] = {"./prime", idString, bString, NULL};
+		char *paramList[] = {"./prime", idString, bString, oValue, NULL};
 		execv("prime", paramList);
 		exit(0);
 		}
@@ -170,6 +178,7 @@ int main(int argc, char *argv[]){
 		else{
 			numOfChildren++;
 		}
+		bValue = bValue + iValue;
 	}
 	printf("Parent to wait for children...\n");
 

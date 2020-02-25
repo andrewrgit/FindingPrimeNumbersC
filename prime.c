@@ -5,6 +5,8 @@
 #include<sys/shm.h>
 #include<errno.h>
 #include<string.h>
+#include<sys/stat.h>
+#include<fcntl.h>
 
 int main(int argc, char *argv[]){
 	printf("This is execed child\n");
@@ -56,15 +58,32 @@ int main(int argc, char *argv[]){
 	if(isPrime == 1){
 		shmPointer[id] = numToCheck;
 	}
-	int j = 0;
-	int d;
-	for(j = 0; j < 1000000; j++){
-	for(d = 0; d < 1000; d++){
-
-		}
-	}
+//	int j = 0;
+//	int d;
+//	for(j = 0; j < 1000000; j++){
+//	for(d = 0; d < 1000; d++){
+//
+	//	}
+	//}
 	printf("isPrime = %d\n", isPrime);
-
-
+	
+	if((shmdt(shmPointer)) < 0){
+		char *errorMessage[150];
+		strcat(errorMessage, basename(argv[0]));
+		strcat(errorMessage, ": Error: Failed to detach shared memory from parent");
+		perror(errorMessage);
+	}
+	int file;
+	char output[50];
+	if(isPrime == 1){
+		sprintf(output, "Child ID: %d found %d to be prime\n", id, numToCheck);
+	}
+	else{
+		sprintf(output, "Child ID: %d found %d to NOT be prime\n", id, numToCheck);	
+	}
+	file = open(argv[3], O_CREAT | O_RDWR | O_APPEND, 0666);	
+	write(file, output, strlen(output));
+	close(file);
+	
 	exit(0);
 }
