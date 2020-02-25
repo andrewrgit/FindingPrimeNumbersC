@@ -44,7 +44,22 @@ int main(int argc, char *argv[]){
 	}
 	printf("strtol argv[1], %d\n", id);
 	printf("strtol argv[2], %d\n", numToCheck);
-
-
+	
+	//Calculate Prime
+	int isPrime = 1;
+	int i;
+	shmPointer[id] = 5;
+	printf("Checking\n");
+	for(i=1;i<numToCheck;i++){
+		if(numToCheck % i == 0 && i != 1 && i != numToCheck){	
+			isPrime = 0;
+			shmPointer[id] = numToCheck * -1;
+		}
+		printf("OutLoop\n");
+	}
+	if(isPrime == 1){
+		shmPointer[id] = numToCheck;
+	}
+	printf("isPrime = %d\n", isPrime);
 	exit(0);
 }

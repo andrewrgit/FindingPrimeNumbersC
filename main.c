@@ -141,7 +141,7 @@ int main(int argc, char *argv[]){
 	if(childPid == 0){
 	printf("This is the child process\n");
 	printf("ChildMem: [0]: %d\n", shmPointer[0]);
-	char *paramList[] = {"./prime", "2", "131", NULL};
+	char *paramList[] = {"./prime", "2", "771", NULL};
 	execv("prime", paramList);
 	exit(0);
 	}
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]){
 		int returnStatus;
 		waitpid(childPid, &returnStatus, 0);
 
-		if(returnStatus >= 0){
+		if(returnStatus == 0){
 			printf("This is parent process\n");
 			printf("child terminated normally\n");
 		}
@@ -162,6 +162,7 @@ int main(int argc, char *argv[]){
 		}
 		printf("ParentMem: [0]: %d\n", shmPointer[0]);
 		printf("ParentMem: [1]: %d\n", shmPointer[1]);
+		printf("ParentMem: [2]: %d\n", shmPointer[2]);
 	}
 	
 	if((shmdt(shmPointer)) < 0){
