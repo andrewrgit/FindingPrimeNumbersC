@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
 					perror(errorMessage);
 				}
 				else{
-					nValue = tmp;
+					nValue = abs(tmp);
 				}
 				printf("nValue: %d\n", nValue);
 				break;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
 					perror(errorMessage);
 				}
 				else{
-					sValue = tmp;
+					sValue = abs(tmp);
 					if(sValue > 20) sValue = 20;
 				}
 				printf("sValue: %d\n", sValue);
@@ -229,7 +229,7 @@ int main(int argc, char *argv[]){
 	sprintf(output, "\nPrime Numbers: ");
 	write(file, output, strlen(output));
 	
-	for(i = 2; i < nValue; i++){
+	for(i = 2; i < nValue + 2; i++){
 		output[0] = '\0';
 		if(shmPointer[i] >= 0){
 			sprintf(output, "%d ", shmPointer[i]);
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 	write(file, "\nNon Prime Numbers: ", strlen("\nNon Prime Numbers: "));
-	for(i = 2; i < nValue; i++){
+	for(i = 2; i < nValue + 2; i++){
 		output[0] = '\0';
 		if(shmPointer[i] < -1){
 			sprintf(output, "%d ", abs(shmPointer[i]));
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]){
 	output[0] = '\0';
 	write(file, "\nNumber of failed child processes: ", strlen("\nNumber of failed child processes: "));
 	int failedCount = 0;
-	for(i = 2; i < nValue; i++){
+	for(i = 2; i < nValue + 2; i++){
 		if(shmPointer[i] == -1){
 			failedCount++;
 		}
