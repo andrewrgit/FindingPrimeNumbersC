@@ -1,0 +1,18 @@
+oss calculates whether certain numbers are prime or not.
+	Options:
+	(-h): Display help message and exit
+	(-n x): Indicate the maximum total child processes oss will ever create. (Default 4)
+	(-s x): Indicate the number of children allowed to exist in the system at the same time. (Default 2)
+	(-b x): Start of the sequence of numbers to be tested for primality. (Default 100)
+	(-i x): Increment between numbers that we test. (Default 3)
+	(-o filename): Output file for logging. (Default output.txt)
+
+	All options are converted to their absolute values. The absolute value of a negative prime number is also prime anyways.
+
+	changeLog.txt has the git log of changes made to the program over time.
+	
+	Enter 'make' to have the Makefile compile all the necessary files. Enter 'make clean' to clean up object files and the executables.
+
+	Problems encountered:
+		-Took a while to figure out a good way to implement the clock
+		-Didn't run in to too many issues where I got stuck without direction. Some parts took a while but looking up documenation I had a clear path on what I needed to do.
