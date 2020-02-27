@@ -9,9 +9,23 @@
 #include<sys/types.h>
 #include<sys/wait.h>
 #include<time.h>
+#include<signal.h>
+#include<fcntl.h>
+
+//Declare function prototypes
+void signalHandler(int signal);
+void updateTime(struct timespec time, int *shmPointer, int startingSec, long startingMSec);
+
+//Declare global variables for use in signal handler
+int *shmPointer;
+int shmid;
 
 int main(int argc, char *argv[]){
 
+	//Set ctrl-c interrupt to be handled by signalHandler function
+	signal(SIGINT, signalHandler);
+
+	//Get basename of the program for use in error messages
 	char *programName = basename(argv[0]);
 
 	//Create bools for whether our options are selected or not
@@ -91,7 +105,7 @@ int main(int argc, char *argv[]){
 					perror(errorMessage);
 				}
 				else{
-					bValue = tmp;
+					bValue = abs(tmp);
 				}
 				printf("bValue: %d\n", bValue);
 				break;
@@ -106,7 +120,7 @@ int main(int argc, char *argv[]){
 					perror(errorMessage);
 				}
 				else{
-					iValue = tmp;
+					iValue = abs(tmp);
 				}
 				printf("iValue: %d\n", iValue);
 				break;
@@ -127,23 +141,33 @@ int main(int argc, char *argv[]){
 
 	key_t key;
 	key = ftok(".", 897);
-	int shmid = shmget(key, sizeof(int) * nValue, 0666 | IPC_CREAT);
+	shmid = shmget(key, sizeof(int) * nValue, 0666 | IPC_CREAT);
 	if(shmid < 0){
 		char *errorMessage[150];
 		strcat(errorMessage, programName);
 		strcat(errorMessage, ": Error: Failed to create shared memory");
 		perror(errorMessage);
 	}
-	int *shmPointer = shmat(shmid, NULL, 0);
-	if (*shmPointer == (void *) -1){
+	shmPointer = shmat(shmid, NULL, 0);
+	if (shmPointer == (void *) -1){
 		char *errorMessage[150];
 		strcat(errorMessage, programName);
 		strcat(errorMessage, ": Error: Failed to attach shared memory");
 		perror(errorMessage);
 	}
 	
-	shmPointer[0] = 5;
-	shmPointer[1] = 9;
+
+	struct timespec time;
+	clock_gettime(CLOCK_MONOTONIC, &time);
+
+	int startingTimeSec = time.tv_sec;
+	long startingTimeMSec = time.tv_nsec / 1000000;
+	int afterTimeSec = time.tv_sec - startingTimeSec;
+	long afterTimeMSec = time.tv_nsec / 1000000 - startingTimeMSec;
+
+	shmPointer[0] = afterTimeSec;
+	shmPointer[1] = afterTimeMSec;
+
 
 	char bString[10];
 	char idString[10];
@@ -156,6 +180,8 @@ int main(int argc, char *argv[]){
 			wait(NULL);
 			numOfChildren--;
 		}
+		updateTime(time, shmPointer, startingTimeSec, startingTimeMSec);
+		 
 		childPid = fork();
 		
 
@@ -187,7 +213,43 @@ int main(int argc, char *argv[]){
 	while ((allChildrenPid = wait(&status)) > 0){
 		numOfChildren--;
 	}
-	printf("shmPointer 2,3,4: %d, %d, %d\n", shmPointer[2],shmPointer[3],shmPointer[4]);
+	
+
+	updateTime(time, shmPointer, startingTimeSec, startingTimeMSec);
+	
+	char output[200];
+	int file = open(oValue, O_CREAT | O_RDWR | O_APPEND, 0666);	
+	sprintf(output, "\nPrime Numbers: ");
+	write(file, output, strlen(output));
+	
+	for(i = 2; i < nValue; i++){
+		output[0] = '\0';
+		if(shmPointer[i] >= 0){
+			sprintf(output, "%d ", shmPointer[i]);
+			write(file, output, strlen(output));
+		}
+	}
+	write(file, "\nNon Prime Numbers: ", strlen("\nNon Prime Numbers: "));
+	for(i = 2; i < nValue; i++){
+		output[0] = '\0';
+		if(shmPointer[i] < -1){
+			sprintf(output, "%d ", abs(shmPointer[i]));
+			write(file, output, strlen(output));
+		}
+	}
+	output[0] = '\0';
+	write(file, "\nNumber of failed child processes: ", strlen("\nNumber of failed child processes: "));
+	int failedCount = 0;
+	for(i = 2; i < nValue; i++){
+		if(shmPointer[i] == -1){
+			failedCount++;
+		}
+	}
+	sprintf(output, "%d", failedCount);
+	strcat(output, "\n");
+	write(file, output, strlen(output));
+	close(file);
+
 	if((shmdt(shmPointer)) < 0){
 		char *errorMessage[150];
 		strcat(errorMessage, programName);
@@ -200,23 +262,24 @@ int main(int argc, char *argv[]){
 		strcat(errorMessage, ": Error: Failed to delete shared memory");
 		perror(errorMessage);	
 	}
-	int j = 0;
-	int d;
-	struct timespec time;
-	clock_gettime(CLOCK_MONOTONIC, &time);
-	printf("TIME BEFORE: %d\n", time.tv_sec);
-	for(j = 0; j < 1000000; j++){
-	for(d = 0; d < 1000; d++){
-
-		}
-	}
-	clock_t after = clock();
-	clock_t difference = after - before;
-	int msec = difference * 1000 / CLOCKS_PER_SEC;
-	printf("Time taken %d seconds %d milliseconds\n",
-	  msec/1000, msec%1000);
 	return 0;
 }
 
 
+
+void signalHandler(int signal){
+	printf("Canceled with ctrl-c, stopping children...\n");
+	kill(0, SIGINT);
+
+	shmdt(shmPointer);
+	shmctl(shmid, IPC_RMID, 0);
+	exit(-1);
+	
+}
+
+void updateTime(struct timespec time, int *shmPointer, int startingSec, long startingMSec){
+	clock_gettime(CLOCK_MONOTONIC, &time);
+	shmPointer[0] = time.tv_sec - startingSec;
+	shmPointer[1] = time.tv_nsec / 1000000 - startingMSec;
+}
 
