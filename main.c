@@ -205,6 +205,13 @@ int main(int argc, char *argv[]){
 			numOfChildren++;
 		}
 		bValue = bValue + iValue;
+		if(shmPointer[0] >= 2 && (shmPointer[1] - startingTimeMSec) > 0){
+			printf("Parent execution time exceeded 2 seconds, exiting...");
+			shmdt(shmPointer);
+			shmctl(shmid, IPC_RMID, 0);
+			kill(0, SIGKILL);
+			exit(-1);
+		}
 	}
 	printf("Parent to wait for children...\n");
 
